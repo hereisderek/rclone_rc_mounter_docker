@@ -1,0 +1,66 @@
+version: '3.5'
+
+networks: 
+  rclone:
+    name: rclone_network
+    driver: "bridge"
+
+services:
+  rclone:
+    image: rclone/rclone:beta
+    container_name: rclone
+    restart: unless-stopped
+    privileged: true
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+      - /etc/localtime:/etc/localtime:ro
+
+      - ./config/rclone/:/config/rclone/
+      - /mnt/rclone/cache/:/cache/
+      - /mnt/rclone/mnt:/mnt:shared
+    security_opt:
+      - seccomp:unconfined
+    devices:
+      - /dev/fuse:/dev/fuse
+    cap_add:
+      - SYS_ADMIN
+      - SETPCAP
+      - MKNOD
+    entrypoint: "/bin/sh -c \"rclone rcd --rc-web-gui --rc-addr :5572 --rc-user  $${WEB_ADMIN_USER} --rc-pass $${WEB_ADMIN_PASSWORD} --rc-serve --rc-web-gui-no-open-browser --rc-web-gui-update -v --cache-dir /cache \""
+    environment:
+      - PHP_TZ=Pacific/Auckland
+      - PUID=1000
+      - PGID=1000
+      - WEB_ADMIN_USER=username
+      - WEB_ADMIN_PASSWORD=password
+    ports:
+      - 5572:5572
+    networks: 
+      - rclone
+
+
+  my-mount:
+    image: hereisderek/rclone-mounter
+    restart: unless-stopped
+    container_name: my-mount
+    environment:
+      - PHP_TZ=Pacific/Auckland
+      - PUID=1000
+      - PGID=1000
+      - WEB_ADMIN_USER=username
+      - WEB_ADMIN_PASSWORD=password
+      - DRIVE_FS=rclone_mount
+      - DRIVE_MOUNT= #same as rclone_mount if leave empty
+    depends_on: 
+      - rclone
+    networks: 
+      - rclone
+    volumes:
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+      - /etc/localtime:/etc/localtime:ro
