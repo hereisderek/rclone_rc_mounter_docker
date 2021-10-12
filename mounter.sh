@@ -41,10 +41,16 @@ rclone rc mount/mount fs=${DRIVE_FS}: mountPoint="${mount_dir}" \
 
 sleep 3
 
+[ -z "${POST_OPTIONS_SET_JSON}" ] || {
+     echo "executing POST_OPTIONS_SET_JSON: $POST_OPTIONS_SET_JSON"
+     rclone rc options/set --json "${POST_OPTIONS_SET_JSON}"  $AUTH 
+}
+
 
 echo "mounting finished"
 rclone rc core/version $AUTH 
 rclone rc options/get  $AUTH 
+
 # rclone rc --loopback operations/fsinfo fs=${DRIVE_FS}: $AUTH 
 rclone rc mount/listmounts $AUTH 
 
